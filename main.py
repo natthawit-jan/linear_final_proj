@@ -7,8 +7,6 @@ import preprocess as p
 import time
 
 
-
-
 def getOnlyCornor(b):
     peri = cv2.arcLength(b, True)
     approx = cv2.approxPolyDP(b, 0.02 * peri, True)
@@ -55,9 +53,9 @@ def get_lst_of_answer(questions):
 FILENAME = 'exam.jpg'
 
 cap = cv2.VideoCapture(0)
-KEY_ANSWER = np.array(['A', 'C', 'B', 'E', 'E', 'C', 'B', 'A', 'C', 'B'])
+KEY_ANSWER = np.array(['A', 'B', 'B', 'A', 'E', 'D', 'B', 'B', 'C', 'E'])
 W, H = 1080, 1920
-while(True):
+while (True):
     ret, frame = cap.read()
 
     try:
@@ -119,29 +117,16 @@ while(True):
             answers_detected = get_lst_of_answer(questions)
 
             SCORE = (np.count_nonzero(KEY_ANSWER == answers_detected) / 10.) * 100.
-            DISPLAY_SCORE = f'{SCORE} %'
+            DISPLAY_SCORE = f'SCORE = {SCORE} %'
 
             # setup text
             font = cv2.QT_FONT_NORMAL
 
-            imgRawScore = np.zeros_like(ScoreWarpedColoredImg)
-            cv2.putText(imgRawScore, DISPLAY_SCORE, (100, 170), font, 3, (255, 255, 0), 4)
-            invMatrixScore = cv2.getPerspectiveTransform(pt2Score, pt1Score)
-            imgInvScoreDisplay = cv2.warpPerspective(imgRawScore, invMatrixScore, (W, H))
+            cv2.putText(imgFinal, DISPLAY_SCORE, (100, 170), font, 3, (255, 255, 0), 4)
 
-            tmp = cv2.cvtColor(imgInvScoreDisplay, cv2.COLOR_BGR2GRAY)
-            _, alpha = cv2.threshold(tmp, 0, 255, cv2.THRESH_BINARY)
-            b, g, r = cv2.split(imgInvScoreDisplay)
-            rgba = [b, g, r, alpha]
-            imgInvScoreDisplay = cv2.merge(rgba, 4)
-
-
-            # # Copy the original for showing the finalq result
-            imgFinal = cv2.addWeighted(imgFinal, .76, imgInvScoreDisplay, .8, 0)
             cv2.imshow('frame', imgFinal)
     except:
         cv2.imshow('frame', frame)
     if cv2.waitKey(300) & 0xFF == ord('q'):
         print('signal sent : stopping')
         break
-
