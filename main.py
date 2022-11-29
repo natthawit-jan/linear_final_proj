@@ -1,61 +1,12 @@
-import os
-
 import cv2
-import pytesseract as psr
 import numpy as np
-import preprocess as p
-import time
-
-
-def getOnlyCornor(b):
-    peri = cv2.arcLength(b, True)
-    approx = cv2.approxPolyDP(b, 0.02 * peri, True)
-    return approx
-
-
-## Order the coordinate
-def order_coordinate(fourPointArray):
-    reshapedPoints = fourPointArray.reshape(4, 2)
-    myPointNew = fourPointArray.copy()
-    add = reshapedPoints.sum(1)
-    myPointNew[0] = reshapedPoints[np.argmin(add)]
-    myPointNew[3] = reshapedPoints[np.argmax(add)]
-    diff = np.diff(reshapedPoints, axis=1)
-    myPointNew[1] = reshapedPoints[np.argmin(diff)]
-    myPointNew[2] = reshapedPoints[np.argmax(diff)]
-    return myPointNew
-
-
-## Get each answer row
-def split_answer_row(answers_warp_img):
-    ten_answers_images = [answers_warp_img[i:i + 100] for i in range(0, 900, 90)]
-    return ten_answers_images
-
-
-def boxes_of_fives(question_img):
-    cols = np.hsplit(question_img, 5)
-    return cols
-
-
-def get_lst_of_answer(questions):
-    '''
-    :param questions: a list of question row
-    :return: list of the answer [A, B, A]
-    '''
-    ans = []
-    for row in questions:
-        eachBox = np.array([np.count_nonzero(box) for box in boxes_of_fives(row)])
-        ans_key = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E'}
-        ans.append(ans_key[np.argmax(eachBox)])
-    return np.array(ans)
-
-
-FILENAME = 'exam.jpg'
+import utils
 
 cap = cv2.VideoCapture(0)
-KEY_ANSWER = np.array(['A', 'B', 'B', 'A', 'E', 'D', 'B', 'B', 'C', 'E'])
+KEY_ANSWER = np.array(['A', 'A', 'B', 'B', 'C', 'C', 'E', 'E', 'D', 'D'])
+ANS_SET = 'ABCDE'
 W, H = 1080, 1920
-while (True):
+while True:
     ret, frame = cap.read()
 
     try:
@@ -83,20 +34,19 @@ while (True):
                 approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
                 if len(approx) == 4:
                     contourLst.append(contour)
+
         contourLst = sorted(contourLst, key=cv2.contourArea, reverse=True)
 
-        boxes = list(map(getOnlyCornor, contourLst))
+        boxes = list(map(utils.getOnlyCornor, contourLst))
 
-        questionBox, idBox, scoreBox = boxes[0], boxes[1], boxes[2]
+        questionBox, scoreBox = boxes[0], boxes[1]
 
-        if questionBox.size != 0 and scoreBox.size != 0 and idBox.size != 0:
+        if questionBox.size != 0 and scoreBox.size != 0:
             cv2.drawContours(onlyBoxesImg, questionBox, -1, (0, 0, 255), 20)
             cv2.drawContours(onlyBoxesImg, scoreBox, -1, (0, 0, 255), 20)
-            cv2.drawContours(onlyBoxesImg, idBox, -1, (0, 0, 255), 20)
 
-            questionBox = order_coordinate(questionBox)
-            idBox = order_coordinate(idBox)
-            scoreBox = order_coordinate(scoreBox)
+            questionBox = utils.order_coordinate(questionBox)
+            scoreBox = utils.order_coordinate(scoreBox)
 
             ## Show warp
             pt1 = np.float32(questionBox)
@@ -112,21 +62,40 @@ while (True):
             ScoreWarpedColoredImg = cv2.warpPerspective(frame, matrixGrade, (500, 320))
 
             ## GET THE ANSWERS
-            questions = split_answer_row(imgTresh)
+            questions = utils.split_answer_row(imgTresh)
 
-            answers_detected = get_lst_of_answer(questions)
-
+            answers_detected = utils.get_lst_of_answer(questions)
             SCORE = (np.count_nonzero(KEY_ANSWER == answers_detected) / 10.) * 100.
-            DISPLAY_SCORE = f'SCORE = {SCORE} %'
+            DISPLAY_SCORE = f'{SCORE} %'
 
-            # setup text
             font = cv2.QT_FONT_NORMAL
+
+            imgRawSheet = np.zeros_like(imgWarpedColored)
+            utils.draw_circles(imgRawSheet, answers_detected, KEY_ANSWER, ANS_SET)
+            invMatrixSheet = cv2.getPerspectiveTransform(pt2, pt1)
+            imgInvSheetDisplay = cv2.warpPerspective(imgRawSheet, invMatrixSheet, (H, W))
+
+            imgInvSheetDisplay = utils.convert_to_transparent(imgInvSheetDisplay)
+
+            imgRawScore = np.zeros_like(ScoreWarpedColoredImg)
+            cv2.putText(imgRawScore, DISPLAY_SCORE, (100, 170), font, 3, (0, 0, 255), 4)
+            invMatrixScore = cv2.getPerspectiveTransform(pt2Score, pt1Score)
+            imgInvScoreDisplay = cv2.warpPerspective(imgRawScore, invMatrixScore, (H, W))
+
+            # imgInvScoreDisplay = cv2.cvtColor(imgInvScoreDisplay, cv2.COLOR_BGR2BGRA)
+            ## Convert to transparant
+            imgInvScoreDisplay = utils.convert_to_transparent(imgInvScoreDisplay)
 
             cv2.putText(imgFinal, DISPLAY_SCORE, (100, 170), font, 3, (255, 255, 0), 4)
 
+            imgFinal = cv2.addWeighted(imgFinal, 1, imgInvScoreDisplay, .9, 1, 0)
+            imgFinal = cv2.addWeighted(imgFinal, 1, imgInvSheetDisplay, .9, 1, 0)
+
             cv2.imshow('frame', imgFinal)
+        else:
+            cv2.imshow('frame', frame)
     except:
         cv2.imshow('frame', frame)
-    if cv2.waitKey(300) & 0xFF == ord('q'):
+    if cv2.waitKey(2) & 0xFF == ord('q'):
         print('signal sent : stopping')
         break
