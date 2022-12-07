@@ -3,7 +3,7 @@ import numpy as np
 import utils
 
 cap = cv2.VideoCapture(0)
-KEY_ANSWER = np.array(['A', 'A', 'B', 'B', 'C', 'C', 'E', 'E', 'D', 'D'])
+KEY_ANSWER = np.array(['A', 'D', 'D', 'B', 'C', 'C', 'E', 'E', 'D', 'D'])
 ANS_SET = 'ABCDE'
 W, H = 1080, 1920
 while True:
@@ -25,25 +25,24 @@ while True:
 
         cv2.drawContours(imgContours, contours, -1, (255, 0, 0), 10)
         # cv2.imshow('contours', imgContours)
-        ## For each contour we find the 3, boxes
         contourLst = []
         for contour in contours:
             area = cv2.contourArea(contour)
-            if area > 40:
+            if area > 5000:
                 peri = cv2.arcLength(contour, True)
                 approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
                 if len(approx) == 4:
+                    # print(area)
                     contourLst.append(contour)
 
         contourLst = sorted(contourLst, key=cv2.contourArea, reverse=True)
-
         boxes = list(map(utils.getOnlyCornor, contourLst))
-
         questionBox, scoreBox = boxes[0], boxes[1]
 
         if questionBox.size != 0 and scoreBox.size != 0:
             cv2.drawContours(onlyBoxesImg, questionBox, -1, (0, 0, 255), 20)
             cv2.drawContours(onlyBoxesImg, scoreBox, -1, (0, 0, 255), 20)
+
 
             questionBox = utils.order_coordinate(questionBox)
             scoreBox = utils.order_coordinate(scoreBox)
@@ -56,6 +55,7 @@ while True:
             imgWarpedGrey = cv2.cvtColor(imgWarpedColored, cv2.COLOR_BGR2GRAY)
             imgTresh = cv2.threshold(imgWarpedGrey, 170, 255, cv2.THRESH_BINARY_INV)[1]
 
+            # cv2.imshow('warp', imgTresh)
             pt1Score = np.float32(scoreBox)
             pt2Score = np.float32([[0, 0], [500, 0], [0, 320], [500, 320]])
             matrixGrade = cv2.getPerspectiveTransform(pt1Score, pt2Score)
@@ -70,6 +70,7 @@ while True:
 
             font = cv2.QT_FONT_NORMAL
 
+            ## QUESTION SHEET
             imgRawSheet = np.zeros_like(imgWarpedColored)
             utils.draw_circles(imgRawSheet, answers_detected, KEY_ANSWER, ANS_SET)
             invMatrixSheet = cv2.getPerspectiveTransform(pt2, pt1)
@@ -82,7 +83,6 @@ while True:
             invMatrixScore = cv2.getPerspectiveTransform(pt2Score, pt1Score)
             imgInvScoreDisplay = cv2.warpPerspective(imgRawScore, invMatrixScore, (H, W))
 
-            # imgInvScoreDisplay = cv2.cvtColor(imgInvScoreDisplay, cv2.COLOR_BGR2BGRA)
             ## Convert to transparant
             imgInvScoreDisplay = utils.convert_to_transparent(imgInvScoreDisplay)
 
@@ -94,8 +94,11 @@ while True:
             cv2.imshow('frame', imgFinal)
         else:
             cv2.imshow('frame', frame)
-    except:
+            # pass
+
+    except Exception  as e:
         cv2.imshow('frame', frame)
+        # print(e)
     if cv2.waitKey(2) & 0xFF == ord('q'):
         print('signal sent : stopping')
         break

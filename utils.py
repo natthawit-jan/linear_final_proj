@@ -8,25 +8,27 @@ def draw_circles(img, real_answers, KEY_ANSWER, ANS_SET):
     question_cnt = 0
 
     def _draw_green(img, pt):
-        cv2.circle(img, pt, 20, (0, 255, 0), cv2.FILLED)
+        cv2.circle(img, pt, 20, (0, 255, 0),  cv2.FILLED)
 
     def _draw_red(img, pt):
         cv2.circle(img, pt, 20, (0, 0, 255), cv2.FILLED)
 
-    for question in range(0, 900, 90):
+    for question in range(0, 1000, 100):
         ans = KEY_ANSWER[question_cnt]
         ind = 0
-        middle_h = question + ((question - question + 100) // 2)
+        middle_h = question + 50
 
         pnt_lst = []
         for choice in range(0, 500, 100):
-            middle_w = choice + ((choice - choice + 100) // 2)
+            middle_w = choice + 50
+
             pnt_lst.append((middle_w, middle_h))
-            ind = ANS_SET.find(ans)
-        if ans == real_answers[question_cnt]:
+        ind = ANS_SET.find(ans)
+        if real_answers[question_cnt] == '-':
+            pass
+        elif ans == real_answers[question_cnt]:
             _draw_green(img, pnt_lst[ind])
         else:
-
             # Draw on the answer
             _draw_green(img, pnt_lst[ind])
             # Draw on the correct answer
@@ -56,13 +58,22 @@ def order_coordinate(fourPointArray):
 
 ## Get each answer row
 def split_answer_row(answers_warp_img):
-    ten_answers_images = [answers_warp_img[i:i + 100] for i in range(0, 900, 90)]
+    ten_answers_images = [answers_warp_img[i:i + 100] for i in range(0, 1000, 100)]
+    # for num, i in enumerate(ten_answers_images):
+    #     cv2.imshow(str(num) + '_row ', i)
     return ten_answers_images
 
 
 def boxes_of_fives(question_img):
     cols = np.hsplit(question_img, 5)
+    # ind = 1
+    # for i in cols:
+    #     cv2.imshow('first '  + str(ind), i)
+    #     ind += 1
     return cols
+
+
+
 
 
 def get_lst_of_answer(questions):
@@ -71,10 +82,19 @@ def get_lst_of_answer(questions):
     :return: list of the answer [A, B, A]
     '''
     ans = []
+    ind = 1
     for row in questions:
-        eachBox = np.array([np.count_nonzero(box) for box in boxes_of_fives(row)])
-        ans_key = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E'}
-        ans.append(ans_key[np.argmax(eachBox)])
+        cv2.imshow(f'row{ind}', row)
+        eachBox = np.array([np.count_nonzero(box)/box.size for box in boxes_of_fives(row)])
+        # The marked one will content at least 30% of the white pixels
+        print(f'Row {ind}', eachBox)
+        marks = np.count_nonzero(eachBox >= .25)
+        if marks >= 2 or marks == 0:
+            ans.append('-')
+        else:
+            ans_key = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E'}
+            ans.append(ans_key[np.argmax(eachBox)])
+        ind += 1
     return np.array(ans)
 
 
