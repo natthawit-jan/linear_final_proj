@@ -6,7 +6,6 @@ import numpy as np
 ## Draw a circle for each question
 def draw_circles(img, real_answers, KEY_ANSWER, ANS_SET):
     question_cnt = 0
-
     def _draw_green(img, pt):
         cv2.circle(img, pt, 20, (0, 255, 0),  cv2.FILLED)
 
@@ -15,9 +14,7 @@ def draw_circles(img, real_answers, KEY_ANSWER, ANS_SET):
 
     for question in range(0, 1000, 100):
         ans = KEY_ANSWER[question_cnt]
-        ind = 0
         middle_h = question + 50
-
         pnt_lst = []
         for choice in range(0, 500, 100):
             middle_w = choice + 50
@@ -59,8 +56,6 @@ def order_coordinate(fourPointArray):
 ## Get each answer row
 def split_answer_row(answers_warp_img):
     ten_answers_images = [answers_warp_img[i:i + 100] for i in range(0, 1000, 100)]
-    # for num, i in enumerate(ten_answers_images):
-    #     cv2.imshow(str(num) + '_row ', i)
     return ten_answers_images
 
 
@@ -73,21 +68,20 @@ def boxes_of_fives(question_img):
     return cols
 
 
+def showbox(e):
+    ind = 1
+    for i in e:
+        cv2.imshow(f'Block {ind}', i)
+        ind += 1
 
 
 
 def get_lst_of_answer(questions):
-    '''
-    :param questions: a list of question row
-    :return: list of the answer [A, B, A]
-    '''
     ans = []
     ind = 1
     for row in questions:
-        cv2.imshow(f'row{ind}', row)
         eachBox = np.array([np.count_nonzero(box)/box.size for box in boxes_of_fives(row)])
-        # The marked one will content at least 30% of the white pixels
-        print(f'Row {ind}', eachBox)
+        # The marked one will content at least 25% of the white pixels
         marks = np.count_nonzero(eachBox >= .25)
         if marks >= 2 or marks == 0:
             ans.append('-')
