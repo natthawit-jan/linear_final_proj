@@ -66,12 +66,10 @@ while True:
 
             # Get list of marks
             answers_detected = utils.get_lst_of_answer(questions)
-            print(f'Marks Detected are: {answers_detected}')
 
             SCORE = (np.count_nonzero(KEY_ANSWER == answers_detected) / 10.) * 100.
             DISPLAY_SCORE = f'{SCORE} %'
 
-            print('Final Score: ' + DISPLAY_SCORE)
 
             font = cv2.QT_FONT_NORMAL
 
@@ -88,9 +86,6 @@ while True:
             imgInvScoreDisplay = cv2.warpPerspective(imgRawScore, invMatrixScore, (H, W))
 
             imgInvScoreDisplay = utils.convert_to_transparent(imgInvScoreDisplay)
-            # print(imgInvScoreDisplay)
-            # print(imgInvScoreDisplay.shape)
-            # cv2.putText(imgFinal, DISPLAY_SCORE, (100, 170), font, 3, (255, 255, 0), 4)
 
             imgFinal = cv2.addWeighted(imgFinal, 1, imgInvSheetDisplay, .9, 1, 0)
             imgFinal = cv2.addWeighted(imgFinal, 1, imgInvScoreDisplay, .9, 1, 0)

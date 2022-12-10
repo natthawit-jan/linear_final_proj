@@ -1,5 +1,4 @@
 import os
-
 import cv2
 import numpy as np
 import utils
@@ -65,8 +64,6 @@ if questionBox.size != 0 and scoreBox.size != 0:
     imgThresh = cv2.threshold(imgWarpedGrey, 170, 255, cv2.THRESH_BINARY_INV)[1]
 
     pt1Score = np.float32(scoreBox)
-    print(pt1Score)
-    imgFinal
     pt2Score = np.float32([[0, 0], [500, 0], [0, 500], [500, 500]])
     matrixGrade = cv2.getPerspectiveTransform(pt1Score, pt2Score)
     ScoreWarpedColoredImg = cv2.warpPerspective(frame, matrixGrade, (500, 500))
@@ -76,12 +73,9 @@ if questionBox.size != 0 and scoreBox.size != 0:
 
     # Get list of marks
     answers_detected = utils.get_lst_of_answer(questions)
-    print(f'Marks Detected are: {answers_detected}')
 
     SCORE = (np.count_nonzero(KEY_ANSWER == answers_detected) / 10.) * 100.
     DISPLAY_SCORE = f'{SCORE} %'
-
-    print('Final Score: ' + DISPLAY_SCORE)
 
     font = cv2.QT_FONT_NORMAL
 
@@ -99,9 +93,6 @@ if questionBox.size != 0 and scoreBox.size != 0:
     imgInvScoreDisplay = cv2.warpPerspective(imgRawScore, invMatrixScore, (H, W))
 
     imgInvScoreDisplay = utils.convert_to_transparent(imgInvScoreDisplay)
-    # print(imgInvScoreDisplay)
-    # print(imgInvScoreDisplay.shape)
-    # cv2.putText(imgFinal, DISPLAY_SCORE, (100, 170), font, 3, (255, 255, 0), 4)
 
     imgFinal = cv2.addWeighted(imgFinal, 1, imgInvSheetDisplay, .9, 1, 0)
     imgFinal = cv2.addWeighted(imgFinal, 1, imgInvScoreDisplay, .9, 1, 0)
