@@ -31,7 +31,7 @@ while True:
             area = cv2.contourArea(contour)
             if area > 5000:
                 peri = cv2.arcLength(contour, True)
-                approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
+                approx = cv2.approxPolyDP(contour, (peri * (3/100.)), True)
                 # Check if we have four corners, if yes, then this is our boxes
                 if len(approx) == 4:
                     contourLst.append(contour)
@@ -96,7 +96,7 @@ while True:
 
     except Exception as e:
         cv2.imshow('frame', frame)
-        print(e)
+        # print(e)
     if cv2.waitKey(2) & 0xFF == ord('q'):
         print('signal sent : stopping')
         break
